@@ -1,4 +1,5 @@
 import {
+    AddButton,
     Channels,
     Chats,
     Header,
@@ -6,6 +7,7 @@ import {
     ProfileImg,
     ProfileModal,
     RightMenu,
+    WorkspaceButton,
     WorkspaceName,
     Workspaces,
     WorkspaceWrapper,
@@ -19,25 +21,28 @@ import gravatar from 'gravatar';
 import Menu from '@components/Menu';
 import DirectMessage from '@pages/DirectMessage';
 import Channel from '@pages/Channel';
+import { Link } from 'react-router-dom';
+import { IWorkspace } from '@typings/db';
 
 const Workspace: FC = ({ children }) => {
     const [showUserMenu, setShowUserMenu] = useState(false);
-    const { data, error, revalidate, mutate } = useSWR('/api/users', fetcher);
+    const { data: userData, error, revalidate, mutate } = useSWR('/api/users', fetcher);
 
     const onLogout = useCallback(() => {
         axios
-            .post('http://localhost:3095/api/users/logout', null, {
+            .post('/api/users/logout', null, {
                 withCredentials: true,
             })
-            .then((res) => {
+            .then(() => {
                 // revalidate();
-                mutate(res.data, false);
+                mutate(false, false);
             });
     }, []);
     const onClickUserProfile = useCallback(() => {
         setShowUserMenu((prev) => !prev);
     }, []);
-    if (!data) {
+    const onClickCreateWorkspace = useCallback(() => {}, []);
+    if (!userData) {
         return <Redirect to="/login" />;
     }
     return (
@@ -45,16 +50,19 @@ const Workspace: FC = ({ children }) => {
             <Header>
                 <RightMenu>
                     <span onClick={onClickUserProfile}>
-                        <ProfileImg src={gravatar.url(data.nickname, { s: '28px', d: 'retro' })} alt={data.nickname} />
+                        <ProfileImg
+                            src={gravatar.url(userData.nickname, { s: '28px', d: 'retro' })}
+                            alt={userData.nickname}
+                        />
                         {showUserMenu && (
                             <Menu style={{ right: 0, top: 38 }} show={showUserMenu} onCloseModal={onClickUserProfile}>
                                 <ProfileModal>
                                     <img
-                                        src={gravatar.url(data.nickname, { s: '36px', d: 'retro' })}
-                                        alt={data.nickname}
+                                        src={gravatar.url(userData.nickname, { s: '36px', d: 'retro' })}
+                                        alt={userData.nickname}
                                     />
                                     <div>
-                                        <span id="profile-name">{data.nickname}</span>
+                                        <span id="profile-name">{userData.nickname}</span>
                                         <span id="profile-active">Active</span>
                                     </div>
                                 </ProfileModal>
@@ -65,7 +73,16 @@ const Workspace: FC = ({ children }) => {
             </Header>
             <button onClick={onLogout}>로그아웃</button>
             <WorkspaceWrapper>
-                <Workspaces>test</Workspaces>
+                <Workspaces>
+                    {userData?.Workspaces.map((ws: IWorkspace) => {
+                        return (
+                            <Link key={ws.id} to={`/workspace/${123}/channel/일반`}>
+                                <WorkspaceButton>{ws.name.slice(0, 1).toUpperCase()}</WorkspaceButton>
+                            </Link>
+                        );
+                    })}
+                    <AddButton onClick={onClickCreateWorkspace}>+</AddButton>
+                </Workspaces>
                 <Channels>
                     <WorkspaceName>SLACK</WorkspaceName>
                     <MenuScroll>menu scroll</MenuScroll>
